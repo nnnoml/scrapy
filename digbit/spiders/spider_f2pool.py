@@ -66,9 +66,9 @@ class F2poolSpider(scrapy.Spider):
             
             default_24_min = vo.xpath('td[4]')
             content["default_24_min"] = default_24_min.xpath('string(.)').extract()[0]
-            content["time_local"] = vo.xpath('td[5]/script').re('\d+\.?\d*') 
+            content["time_local"] = vo.xpath('td[6]/span[1]/script').re('\d+\.?\d*') 
 
-            if not content['time_local'] or content["default_24_min"] == '':
+            if content['time_local'] or content["default_24_min"] == '':
                 #查询要关闭的端口号
                 sel.cursor.execute("select bp.id from board_list as b INNER join board_port_list as bp on b.id = bp.board_id where bp.close_time>0 and b.bar_id = "+str(content['bar_id'])+" and FIND_IN_SET('"+str(content['computer_name'])+"',bp.comp_id)")
                 port_id = sel.cursor.fetchone()

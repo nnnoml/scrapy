@@ -22,7 +22,8 @@ class F2poolSpider(scrapy.Spider):
 
     def __init__(self): #查询获取爬行地址
         self = database.conn(self) #数据库实例
-        self.cursor.execute("select url,bar_id from url_list where (url like '%f2pool%' or url like '%vvpool%')")
+        #self.cursor.execute("select url,bar_id from url_list where (url like '%f2pool%' or url like '%vvpool%')")
+        self.cursor.execute("select url,bar_id from url_list where id = 14")
         info = self.cursor.fetchall()
         for vo in info:
             #爬虫地址数组
@@ -45,7 +46,6 @@ class F2poolSpider(scrapy.Spider):
             machine_list = machine_list.split(',')
             #网吧id和网吧机器映射
             self.bar_id[vo[1]]=machine_list
-
     def parse(self, response): #爬到数据后的回调
 
         sel = database.conn(self)
@@ -60,18 +60,22 @@ class F2poolSpider(scrapy.Spider):
             # 默认网吧id 0 ，根据电脑名称遍历所有网吧机器，获取对应网吧id
             content["bar_id"] = 0
             for idx in self.bar_id:
-                if content["computer_name"] in self.bar_id[idx]:
+                if content["computer_name"].lower() in self.bar_id[idx]:
                     content["bar_id"] = idx
                     break
             
             default_24_min = vo.xpath('td[4]')
             content["default_24_min"] = default_24_min.xpath('string(.)').extract()[0]
-            content["time_local"] = vo.xpath('td[6]/span[1]/script').re('\d+\.?\d*') 
+            #ak  在第五行
+            content["time_local"] = vo.xpath('td[5]/span[1]/script').re('\d+\.?\d*') 
+            #eth 在第六行
+            content["time_local6"] = vo.xpath('td[6]/span[1]/script').re('\d+\.?\d*') 
 
-            if content['time_local'] or content["default_24_min"] == '':
+            if content['time_local'] or content["time_local6"] or content["default_24_min"] == '':
                 #查询要关闭的端口号
                 sel.cursor.execute("select bp.id from board_list as b INNER join board_port_list as bp on b.id = bp.board_id where bp.close_time>0 and b.bar_id = "+str(content['bar_id'])+" and FIND_IN_SET('"+str(content['computer_name'])+"',bp.comp_id)")
                 port_id = sel.cursor.fetchone()
+                print(port_id)
                 if port_id is None:
                     content['port_id'] = 0
                 else:
